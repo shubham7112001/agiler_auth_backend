@@ -1,0 +1,61 @@
+const nodemailer = require('nodemailer');
+const cryptojs = require('crypto-js');
+const htmlContent = require('../html-designs/email-verification-successful');
+
+const transporter = nodemailer.createTransport({
+    host : 'smtp.gmail.com',
+  service: 'smtp.forwardemail.net',
+  port : 465,
+  secure : true,
+  auth: {
+    user: "demo55207@gmail.com",
+    pass: "hilf qizz nthk sbsw",
+  },
+  tls: {
+    ciphers:'SSLv3'
+}
+});
+
+const verificationTokens = {};
+
+
+app.post('/register', (req, res) => {
+  const { email } = req.body;
+
+
+   const verificationToken = cryptojs.lib.WordArray.random(20).toString();
+
+   verificationTokens[email] = verificationToken;
+ 
+   const verificationLink = `http://localhost:${process.env.PORT}/verify?email=${email}&token=${verificationToken}`;
+ 
+
+
+
+  const mailOptions = {
+    from: 'demo55207@gmail.com',
+    to: email,
+    subject: 'Email Verification',
+    html: `<p>Click the following link to verify your email: <a href="${verificationLink}">${verificationLink}</a></p>`,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+        console.log(error);
+      return res.status(500).json({ status: 'error', message: 'Failed to send verification email' });
+    }
+    res.status(200).json({ status: 'success', message: 'Verification email sent successfully' });
+  });
+});
+
+app.get('/verify', (req, res) => {
+
+  const { email, token } = req.query;
+  const storedToken = verificationTokens[email];
+  if (!storedToken || storedToken !== token) {
+    return res.status(400).json({ status: 'error', message: 'Invalid verification code' });
+  }
+
+  res.status(200).send(htmlContent);
+  delete verificationTokens[email];
+});
